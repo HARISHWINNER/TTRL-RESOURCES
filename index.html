@@ -1,93 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 League Results Generator</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>F1 League Results Generator — Fixed</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
-            overflow-y: scroll; /* Enable scrolling for the whole page */
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        
-        .f1-font-black { font-weight: 900; }
-        .f1-font-bold { font-weight: 700; }
-        .f1-font-medium { font-weight: 500; }
-        
-        /* The result card itself will use the provided image as a background */
+        /* Base rendering stability */
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body { font-family: 'Inter', sans-serif; background-color: #111827; margin: 0; color: #fff; }
+
+        /* The result card uses the provided image as background */
         #result-card {
-            width: 1280px; /* Matched to new background image resolution */
-            height: 720px; /* Matched to new background image resolution */
-            background-image: url('https://raw.githubusercontent.com/HARISHWINNER/TTRL-RESOURCES/75ed78b480544381bcaddea64966e13803abb460/race_res.png'); /* The exact template image from GitHub */
+            width: 1280px;
+            height: 720px;
+            background-image: url('https://raw.githubusercontent.com/HARISHWINNER/TTRL-RESOURCES/75ed78b480544381bcaddea64966e13803abb460/race_res.png');
             background-size: cover;
             background-position: center;
             position: relative;
-            color: white; /* Default text color for the card */
-            overflow: hidden; /* Hide anything that goes outside */
+            color: white;
+            overflow: hidden;
+            -webkit-transform: translateZ(0);
         }
 
-        /* Absolutely positioned elements to match template */
+        /* Title */
         #preview-title {
             position: absolute;
-            top: 71px; /* Shifted Up More */
+            top: 71px;
             left: 120px;
-            font-family: 'Orbitron', sans-serif; /* F1 Style Font */
+            font-family: 'Orbitron', sans-serif;
             font-size: 28px;
             font-weight: 900;
             white-space: nowrap;
             letter-spacing: 0.5px;
         }
 
+        /* Results container */
         #results-table-container {
             position: absolute;
-            top: 180px; /* Shifted Up More */
+            top: 180px;
             left: 0;
             width: 100%;
-            height: 490px; 
-            overflow: hidden; 
+            height: 490px; /* keep original area reserved for rows */
+            overflow: hidden;
         }
 
+        /* Stable row height for predictable vertical centering
+           Set row-height to 24.5px so 20 rows exactly fit into 490px (24.5 * 20 = 490) */
+        :root { --row-height: 24.5px; } /* keep in sync with JS ROW_HEIGHT */
         #preview-race-body tr {
-            position: relative;
             display: block;
-            height: 24.5px;
+            position: relative;
+            height: var(--row-height);
+            line-height: var(--row-height);
+            font-size: 11px; /* decreased font size for rows */
         }
+
+        /* Cells are fixed-height flex containers for consistent vertical alignment */
         #preview-race-body td {
             position: absolute;
             top: 0;
-            bottom: 0;
             display: flex;
             align-items: center;
-            font-size: 12px;
-            white-space: nowrap; 
+            height: var(--row-height);
+            font-size: 11px; /* decreased font size for cells */
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             font-weight: 500;
-            color: #f0f0f0; 
-            letter-spacing: 0.5px;
-        }
-        
-        #preview-race-body .td-team img {
-            height: 14px; 
-            margin-right: 4px; 
-            object-fit: contain;
+            color: #f0f0f0;
+            letter-spacing: 0.25px;
+            padding: 0 4px; /* reduced padding to help fit text within widths */
+            box-sizing: border-box;
         }
 
+        /* helper class to horizontally center cell content (used for grid/points/etc.) */
+        #preview-race-body td.cell-center {
+            justify-content: center;
+            text-align: center;
+        }
+
+        #preview-race-body .td-team img.team-logo {
+            height: 14px; /* slightly smaller to match new row size */
+            margin-right: 6px;
+            object-fit: contain;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        /* Winner section */
         #winner-logo-box {
-            position: absolute; 
-            top: 262px; /* Shifted Up More */
+            position: absolute;
+            top: 262px;
             left: 947px;
             width: 298px;
             height: 196px;
@@ -95,13 +107,10 @@
             justify-content: center;
             align-items: center;
         }
-        #winner-logo-box img {
-            height: 70px;
-            object-fit: contain;
-        }
+        #winner-logo-box img { height: 70px; object-fit: contain; }
         #winner-details-box {
-            position: absolute; 
-            top: 450px; /* Shifted Up More */
+            position: absolute;
+            top: 450px;
             left: 946px;
             width: 299px;
             height: 85px;
@@ -110,26 +119,15 @@
             justify-content: center;
             align-items: center;
         }
-        #winner-name {
-            font-size: 24px;
-            font-weight: 900;
-            color: #eee;
-            margin-bottom: 2px;
-            white-space: nowrap;
-        }
-        #winner-team {
-            font-size: 18px;
-            font-weight: 700;
-            color: #aaa;
-            white-space: nowrap;
-        }
+        #winner-name { font-size: 24px; font-weight: 900; color: #eee; margin-bottom: 2px; white-space: nowrap; }
+        #winner-team { font-size: 18px; font-weight: 700; color: #aaa; white-space: nowrap; }
 
         #footer-awards {
             position: absolute;
-            top: 676px; /* Shifted Up More */
+            top: 676px;
             left: 450px;
-            transform: translate(-50%, -50%); 
-            font-size: 14px; 
+            transform: translate(-50%, -50%);
+            font-size: 14px;
             font-weight: 700;
             color: white;
             white-space: nowrap;
@@ -167,7 +165,7 @@
                         </div>
                      </div>
                 </div>
-                
+
                 <div>
                     <h2 class="text-xl font-bold border-b-2 border-red-600 pb-2 mb-4">Race Results (Top 20)</h2>
                      <div class="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2 px-2">
@@ -180,10 +178,9 @@
                         <span class="col-span-1">Time</span>
                         <span class="col-span-1">Points</span>
                     </div>
-                    <div id="race-inputs" class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                    </div>
+                    <div id="race-inputs" class="space-y-2 max-h-[300px] overflow-y-auto pr-2"></div>
                 </div>
-                
+
                 <div class="pt-4 flex gap-4">
                      <button id="downloadBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg">
                         Download Results Image
@@ -239,11 +236,10 @@
             "Alpine": "ALPINE RENAULT", "Aston Martin": "ASTON MARTIN ARAMCO MERCEDES", "Williams": "WILLIAMS MERCEDES",
             "Haas": "HAAS FERRARI", "Kick Sauber": "KICK SAUBER FERRARI", "Racing Bulls": "RACING BULLS HONDA RBPT", "Other": "TEAM NAME"
         };
-        
+
         const initialDrivers = Array.from({ length: 20 }, (_, i) => ({
              driver: 'PLAYER NAME', team: 'Other', grid: i + 1, stops: 2, bestLap: '1:11:546', time: '45:47.690', points: i < 10 ? `+${[25,18,15,12,10,8,6,4,2,1][i]}` : '0'
         }));
-
 
         const raceInputsContainer = document.getElementById('race-inputs');
         const previewRaceBody = document.getElementById('preview-race-body');
@@ -252,7 +248,21 @@
         const resultCard = document.getElementById('result-card');
         const ppDriverSelect = document.getElementById('pp_driver');
         const ppTeamSelect = document.getElementById('pp_team');
-        
+
+        // must match CSS --row-height (24.5px so 20 rows = 490px)
+        const ROW_HEIGHT = 24.5;
+        const coords = {
+            pos: { x: 125, y: 567 },
+            driver: { x: 396, y: 567 },
+            team: { x: 1028, y: 567 },
+            grid: { x: 1648, y: 567 },
+            stop: { x: 1780, y: 567 },
+            best: { x: 1985, y: 567 },
+            time: { x: 2270, y: 567 },
+            points: { x: 2625, y: 567 }
+        };
+        const COORD_SCALE = 3;
+
         function populateStaticDropdowns() {
             ppTeamSelect.innerHTML = Object.keys(teamLogos).map(team => `<option value="${team}">${team}</option>`).join('');
         }
@@ -299,19 +309,17 @@
             defaultOption.textContent = "Select Driver...";
             ppDriverSelect.appendChild(defaultOption);
 
-            let driverNames = [];
             for (let i = 0; i < 20; i++) {
                 const driverInput = document.querySelector(`#race-inputs [data-index='${i}'][data-field='driver']`);
                  if (driverInput && driverInput.value.trim() && driverInput.value.trim() !== 'PLAYER NAME') {
                     const driverName = driverInput.value.toUpperCase();
-                    driverNames.push(driverName);
                     const option = document.createElement('option');
                     option.value = driverName;
                     option.textContent = driverName;
                     ppDriverSelect.appendChild(option);
                 }
             }
-            if (driverNames.includes(currentPoleDriver)) {
+            if ([...ppDriverSelect.options].some(o => o.value === currentPoleDriver)) {
                 ppDriverSelect.value = currentPoleDriver;
             } else {
                 ppDriverSelect.value = "PLAYER NAME";
@@ -319,18 +327,6 @@
             
             previewRaceBody.innerHTML = '';
             let winnerData = null;
-
-            const scale = 3; 
-            const coords = {
-                pos: { x: 125, y: 567 },
-                driver: { x: 396, y: 567 },
-                team: { x: 1028, y: 567 },
-                grid: { x: 1648, y: 567 },
-                stop: { x: 1780, y: 567 },
-                best: { x: 1985, y: 567 },
-                time: { x: 2270, y: 567 },
-                points: { x: 2625, y: 567 }
-            };
 
             for (let i = 0; i < 20; i++) {
                 const driverInput = document.querySelector(`#race-inputs [data-index='${i}'][data-field='driver']`);
@@ -352,20 +348,23 @@
                 if(i === 0) winnerData = data;
 
                 const row = document.createElement('tr');
+                row.style.height = ROW_HEIGHT + 'px';
+                row.style.lineHeight = ROW_HEIGHT + 'px';
+
                 const textColor = (i === 0) ? '#000000' : '#f0f0f0';
 
                 row.innerHTML = `
-                    <td style="left: ${coords.pos.x / scale}px; text-align: center; width: 50px; color: ${textColor};">${i + 1}</td>
-                    <td style="left: ${coords.driver.x / scale}px; text-align: left; width: 154px; color: ${textColor};">${data.driver}</td>
-                    <td style="left: ${coords.team.x / scale}px; text-align: left; width: 285px; color: ${textColor};" class="td-team">
+                    <td class="cell-center" style="left: ${coords.pos.x / COORD_SCALE}px; text-align: center; width: 50px; color: ${textColor};">${i + 1}</td>
+                    <td style="left: ${coords.driver.x / COORD_SCALE}px; text-align: left; width: 154px; color: ${textColor};">${data.driver}</td>
+                    <td style="left: ${coords.team.x / COORD_SCALE}px; text-align: left; width: 285px; color: ${textColor};" class="td-team">
                         <img src="${teamLogos[data.team] || teamLogos['Other']}" class="team-logo" alt="${data.team} logo">
                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${teamFullNames[data.team] || data.team}</span>
                     </td>
-                    <td style="left: ${coords.grid.x / scale}px; text-align: center; width: 48px; color: ${textColor};">${data.grid}</td>
-                    <td style="left: ${coords.stop.x / scale}px; text-align: center; width: 60px; color: ${textColor};">${data.stops}</td>
-                    <td style="left: ${coords.best.x / scale}px; text-align: center; width: 96px; color: ${textColor};">${data.bestLap}</td>
-                    <td style="left: ${coords.time.x / scale}px; text-align: center; width: 109px; color: ${textColor};">${data.time}</td>
-                    <td style="left: ${coords.points.x / scale}px; text-align: center; width: 40px; color: ${textColor};">${data.points}</td>
+                    <td class="cell-center" style="left: ${coords.grid.x / COORD_SCALE}px; text-align: center; width: 48px; color: ${textColor};">${data.grid}</td>
+                    <td class="cell-center" style="left: ${coords.stop.x / COORD_SCALE}px; text-align: center; width: 60px; color: ${textColor};">${data.stops}</td>
+                    <td class="cell-center" style="left: ${coords.best.x / COORD_SCALE}px; text-align: center; width: 96px; color: ${textColor};">${data.bestLap}</td>
+                    <td class="cell-center" style="left: ${coords.time.x / COORD_SCALE}px; text-align: center; width: 109px; color: ${textColor};">${data.time}</td>
+                    <td class="cell-center" style="left: ${coords.points.x / COORD_SCALE}px; text-align: center; width: 40px; color: ${textColor};">${data.points}</td>
                 `;
                 previewRaceBody.appendChild(row);
             }
@@ -403,45 +402,65 @@
             document.getElementById('preview-pp').textContent = content;
         }
 
-        function downloadImage() {
+        // Wait for images inside an element to be loaded (resolves even if some fail)
+        function waitForImages(container) {
+            const imgs = Array.from(container.querySelectorAll('img'));
+            if (!imgs.length) return Promise.resolve();
+            return Promise.all(imgs.map(img => new Promise(resolve => {
+                if (img.complete) return resolve();
+                img.addEventListener('load', resolve);
+                img.addEventListener('error', resolve);
+            })));
+        }
+
+        async function downloadImage() {
             const button = document.getElementById('downloadBtn');
             button.textContent = 'Generating...';
             button.disabled = true;
 
-            setTimeout(() => {
-                html2canvas(resultCard, { 
-                    scale: 3,
-                    backgroundColor: null,
-                    useCORS: true,
-                    logging: false
-                })
-                .then(canvas => {
+            try {
+                // Ensure fonts & images are ready so html2canvas captures accurate metrics
+                await document.fonts.ready;
+                await waitForImages(resultCard);
+                await new Promise(r => setTimeout(r, 100)); // small settle delay
+
+                const canvas = await html2canvas(resultCard, { scale: 3, backgroundColor: null, useCORS: true, logging: false });
+
+                canvas.toBlob(blob => {
+                    if (!blob) {
+                        alert('Export failed — canvas was not created. This usually happens with cross-origin images. Check console for details.');
+                        return;
+                    }
                     const link = document.createElement('a');
                     const gpName = document.getElementById('trackName').value || 'f1-results';
                     link.download = `${gpName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_results.png`;
-                    link.href = canvas.toDataURL('image/png');
+                    const url = URL.createObjectURL(blob);
+                    link.href = url;
+                    document.body.appendChild(link);
                     link.click();
-                })
-                .catch(err => {
-                    console.error('Oops, something went wrong!', err);
-                    alert('Failed to generate image. Please try again or check console for errors.');
-                })
-                .finally(() => {
-                    button.textContent = 'Download Results Image';
-                    button.disabled = false;
-                });
-            }, 1000); // Increased delay to 1 second
+                    link.remove();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+
+            } catch (err) {
+                console.error('Oops, something went wrong!', err);
+                alert('Failed to generate image. See console for details.');
+            } finally {
+                button.textContent = 'Download Results Image';
+                button.disabled = false;
+            }
         }
-        
+
         document.querySelector('.w-full.bg-gray-800').addEventListener('input', updatePreview);
         downloadBtn.addEventListener('click', downloadImage);
         resetBtn.addEventListener('click', resetData);
 
         document.addEventListener('DOMContentLoaded', () => {
-            populateStaticDropdowns();
+            // populate dropdowns and seed inputs
+            const ppTeam = document.getElementById('pp_team');
+            ppTeam.innerHTML = Object.keys(teamLogos).map(team => `<option value="${team}">${team}</option>`).join('');
             resetData();
         });
     </script>
 </body>
 </html>
-
