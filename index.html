@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 League Results Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            overflow-y: scroll; /* Enable scrolling for the whole page */
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        .f1-font-black { font-weight: 900; }
+        .f1-font-bold { font-weight: 700; }
+        .f1-font-medium { font-weight: 500; }
+        
+        /* The result card itself will use the provided image as a background */
+        #result-card {
+            width: 1280px; /* Matched to new background image resolution */
+            height: 720px; /* Matched to new background image resolution */
+            background-image: url('https://raw.githubusercontent.com/HARISHWINNER/TTRL-RESOURCES/75ed78b480544381bcaddea64966e13803abb460/race_res.png'); /* The exact template image from GitHub */
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            color: white; /* Default text color for the card */
+            overflow: hidden; /* Hide anything that goes outside */
+        }
+
+        /* Absolutely positioned elements to match template */
+        #preview-title {
+            position: absolute;
+            top: 71px; /* Shifted Up More */
+            left: 120px;
+            font-family: 'Orbitron', sans-serif; /* F1 Style Font */
+            font-size: 28px;
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        #results-table-container {
+            position: absolute;
+            top: 180px; /* Shifted Up More */
+            left: 0;
+            width: 100%;
+            height: 490px; 
+            overflow: hidden; 
+        }
+
+        #preview-race-body tr {
+            position: relative;
+            display: block;
+            height: 24.5px;
+        }
+        #preview-race-body td {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            color: #f0f0f0; 
+            letter-spacing: 0.5px;
+        }
+        
+        #preview-race-body .td-team img {
+            height: 14px; 
+            margin-right: 4px; 
+            object-fit: contain;
+        }
+
+        #winner-logo-box {
+            position: absolute; 
+            top: 262px; /* Shifted Up More */
+            left: 947px;
+            width: 298px;
+            height: 196px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #winner-logo-box img {
+            height: 70px;
+            object-fit: contain;
+        }
+        #winner-details-box {
+            position: absolute; 
+            top: 450px; /* Shifted Up More */
+            left: 946px;
+            width: 299px;
+            height: 85px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #winner-name {
+            font-size: 24px;
+            font-weight: 900;
+            color: #eee;
+            margin-bottom: 2px;
+            white-space: nowrap;
+        }
+        #winner-team {
+            font-size: 18px;
+            font-weight: 700;
+            color: #aaa;
+            white-space: nowrap;
+        }
+
+        #footer-awards {
+            position: absolute;
+            top: 676px; /* Shifted Up More */
+            left: 450px;
+            transform: translate(-50%, -50%); 
+            font-size: 14px; 
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-black text-red-600 tracking-wider">F1 RESULTS GENERATOR</h1>
+            <p class="text-gray-400 mt-2">Create and share professional-looking race results for your F1 league.</p>
+        </header>
+
+        <div class="flex flex-col gap-8">
+            <div class="w-full bg-gray-800 p-6 rounded-2xl shadow-2xl space-y-6 h-full">
+                <div>
+                    <h2 class="text-2xl font-bold border-b-2 border-red-600 pb-2 mb-4">Event Details</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="leagueName" value="TTRL SEASON 1" class="bg-gray-700 p-2 rounded-md" placeholder="League Name">
+                        <input type="text" id="trackName" value="(TRACK NAME) GP 2025" class="bg-gray-700 p-2 rounded-md" placeholder="Track & Year">
+                    </div>
+                </div>
+
+                <div>
+                     <h2 class="text-xl font-bold border-b-2 border-red-600 pb-2 mb-4">Special Awards</h2>
+                     <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        <div>
+                             <label class="block text-sm font-medium text-gray-300">Pole Position</label>
+                             <div class="grid grid-cols-3 gap-2 mt-1">
+                                <select id="pp_driver" class="bg-gray-700 p-2 rounded-md text-sm uppercase"></select>
+                                <select id="pp_team" class="bg-gray-700 p-2 rounded-md text-sm uppercase"></select>
+                                <input type="text" id="pp_time" placeholder="Time" value="1:10.123" class="bg-gray-700 p-2 rounded-md text-sm">
+                             </div>
+                        </div>
+                     </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-xl font-bold border-b-2 border-red-600 pb-2 mb-4">Race Results (Top 20)</h2>
+                     <div class="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2 px-2">
+                        <span class="col-span-1">Pos</span>
+                        <span class="col-span-2">Driver</span>
+                        <span class="col-span-3">Team</span>
+                        <span class="col-span-1 text-center">Grid</span>
+                        <span class="col-span-1 text-center">Stop</span>
+                        <span class="col-span-2">Best</span>
+                        <span class="col-span-1">Time</span>
+                        <span class="col-span-1">Points</span>
+                    </div>
+                    <div id="race-inputs" class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    </div>
+                </div>
+                
+                <div class="pt-4 flex gap-4">
+                     <button id="downloadBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                        Download Results Image
+                    </button>
+                    <button id="resetBtn" class="w-1/3 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full relative flex justify-center">
+                <div id="result-card">
+                    <p id="preview-title" class="f1-font-black">TTRL SEASON 1 (TRACK NAME) GP 2025</p>
+
+                    <div id="results-table-container">
+                        <table class="w-full h-full border-collapse">
+                            <tbody id="preview-race-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="winner-logo-box">
+                       <img id="winner-logo-placeholder" src="https://placehold.co/200x80/21202e/ffffff?text=TEAM+LOGO" alt="Team logo">
+                    </div>
+                    <div id="winner-details-box">
+                        <p id="winner-name"></p>
+                        <p id="winner-team"></p>
+                    </div>
+
+                    <div id="footer-awards">
+                        <span id="preview-pp"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const teamLogos = {
+            "Mercedes": "https://www.formula1.com/content/dam/fom-website/teams/2023/mercedes-logo.png.transform/2col-retina/image.png",
+            "Red Bull": "https://www.formula1.com/content/dam/fom-website/teams/2023/red-bull-racing-logo.png.transform/2col-retina/image.png",
+            "Ferrari": "https://www.formula1.com/content/dam/fom-website/teams/2023/ferrari-logo.png.transform/2col-retina/image.png",
+            "McLaren": "https://www.formula1.com/content/dam/fom-website/teams/2023/mclaren-logo.png.transform/2col-retina/image.png",
+            "Alpine": "https://www.formula1.com/content/dam/fom-website/teams/2023/alpine-logo.png.transform/2col-retina/image.png",
+            "Aston Martin": "https://www.formula1.com/content/dam/fom-website/teams/2023/aston-martin-logo.png.transform/2col-retina/image.png",
+            "Williams": "https://www.formula1.com/content/dam/fom-website/teams/2023/williams-logo.png.transform/2col-retina/image.png",
+            "Haas": "https://www.formula1.com/content/dam/fom-website/teams/2023/haas-f1-team-logo.png.transform/2col-retina/image.png",
+            "Kick Sauber": "https://www.formula1.com/content/dam/fom-website/teams/2024/kick-sauber-logo.png.transform/2col-retina/image.png",
+            "Racing Bulls": "https://www.formula1.com/content/dam/fom-website/teams/2024/rb-logo.png.transform/2col-retina/image.png",
+            "Other": "https://placehold.co/200x80/21202e/ffffff?text=TEAM"
+        };
+        const teamFullNames = {
+            "Mercedes": "MERCEDES", "Red Bull": "RED BULL RACING HONDA RBPT", "Ferrari": "FERRARI", "McLaren": "MCLAREN MERCEDES",
+            "Alpine": "ALPINE RENAULT", "Aston Martin": "ASTON MARTIN ARAMCO MERCEDES", "Williams": "WILLIAMS MERCEDES",
+            "Haas": "HAAS FERRARI", "Kick Sauber": "KICK SAUBER FERRARI", "Racing Bulls": "RACING BULLS HONDA RBPT", "Other": "TEAM NAME"
+        };
+        
+        const initialDrivers = Array.from({ length: 20 }, (_, i) => ({
+             driver: 'PLAYER NAME', team: 'Other', grid: i + 1, stops: 2, bestLap: '1:11:546', time: '45:47.690', points: i < 10 ? `+${[25,18,15,12,10,8,6,4,2,1][i]}` : '0'
+        }));
+
+
+        const raceInputsContainer = document.getElementById('race-inputs');
+        const previewRaceBody = document.getElementById('preview-race-body');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultCard = document.getElementById('result-card');
+        const ppDriverSelect = document.getElementById('pp_driver');
+        const ppTeamSelect = document.getElementById('pp_team');
+        
+        function populateStaticDropdowns() {
+            ppTeamSelect.innerHTML = Object.keys(teamLogos).map(team => `<option value="${team}">${team}</option>`).join('');
+        }
+
+        function resetData() {
+            raceInputsContainer.innerHTML = ''; 
+            for (let i = 0; i < 20; i++) {
+                const driverData = initialDrivers[i] || { driver: 'PLAYER NAME', team: 'Other', grid: i + 1, stops: 2, bestLap: '1:11:546', time: '45:47.690', points: '0' };
+                createDriverInput(driverData, i);
+            }
+            document.getElementById('leagueName').value = "TTRL SEASON 1";
+            document.getElementById('trackName').value = "(TRACK NAME) GP 2025";
+            document.getElementById('pp_time').value = '1:10.123';
+            ppTeamSelect.value = "Other";
+            updatePreview();
+        }
+
+        function createDriverInput(driverData, index) {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 gap-2 items-center';
+            row.innerHTML = `
+                <span class="col-span-1 text-sm text-gray-400 text-center">${index + 1}</span>
+                <input data-index="${index}" data-field="driver" type="text" value="${driverData.driver}" class="col-span-2 bg-gray-600 rounded p-1 text-xs uppercase">
+                <select data-index="${index}" data-field="team" class="col-span-3 bg-gray-600 rounded p-1 text-xs">
+                    ${Object.keys(teamLogos).map(team => `<option value="${team}" ${driverData.team === team ? 'selected' : ''}>${team}</option>`).join('')}
+                </select>
+                <input data-index="${index}" data-field="grid" type="text" value="${driverData.grid}" class="col-span-1 bg-gray-600 rounded p-1 text-xs text-center">
+                <input data-index="${index}" data-field="stops" type="text" value="${driverData.stops}" class="col-span-1 bg-gray-600 rounded p-1 text-xs text-center">
+                <input data-index="${index}" data-field="bestLap" type="text" value="${driverData.bestLap}" class="col-span-2 bg-gray-600 rounded p-1 text-xs">
+                <input data-index="${index}" data-field="time" type="text" value="${driverData.time}" class="col-span-1 bg-gray-600 rounded p-1 text-xs">
+                <input data-index="${index}" data-field="points" type="text" value="${driverData.points}" class="col-span-1 bg-gray-600 rounded p-1 text-xs">
+            `;
+            raceInputsContainer.appendChild(row);
+        }
+
+        function updatePreview() {
+            document.getElementById('preview-title').textContent = `${document.getElementById('leagueName').value} ${document.getElementById('trackName').value}`;
+            
+            const currentPoleDriver = ppDriverSelect.value;
+            ppDriverSelect.innerHTML = ''; 
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "PLAYER NAME";
+            defaultOption.textContent = "Select Driver...";
+            ppDriverSelect.appendChild(defaultOption);
+
+            let driverNames = [];
+            for (let i = 0; i < 20; i++) {
+                const driverInput = document.querySelector(`#race-inputs [data-index='${i}'][data-field='driver']`);
+                 if (driverInput && driverInput.value.trim() && driverInput.value.trim() !== 'PLAYER NAME') {
+                    const driverName = driverInput.value.toUpperCase();
+                    driverNames.push(driverName);
+                    const option = document.createElement('option');
+                    option.value = driverName;
+                    option.textContent = driverName;
+                    ppDriverSelect.appendChild(option);
+                }
+            }
+            if (driverNames.includes(currentPoleDriver)) {
+                ppDriverSelect.value = currentPoleDriver;
+            } else {
+                ppDriverSelect.value = "PLAYER NAME";
+            }
+            
+            previewRaceBody.innerHTML = '';
+            let winnerData = null;
+
+            const scale = 3; 
+            const coords = {
+                pos: { x: 125, y: 567 },
+                driver: { x: 396, y: 567 },
+                team: { x: 1028, y: 567 },
+                grid: { x: 1648, y: 567 },
+                stop: { x: 1780, y: 567 },
+                best: { x: 1985, y: 567 },
+                time: { x: 2270, y: 567 },
+                points: { x: 2625, y: 567 }
+            };
+
+            for (let i = 0; i < 20; i++) {
+                const driverInput = document.querySelector(`#race-inputs [data-index='${i}'][data-field='driver']`);
+                
+                if (!driverInput || !driverInput.value.trim()) { 
+                    break; 
+                }
+
+                const data = {
+                    driver: driverInput.value.toUpperCase(),
+                    team: document.querySelector(`#race-inputs [data-index='${i}'][data-field='team']`).value,
+                    grid: document.querySelector(`#race-inputs [data-index='${i}'][data-field='grid']`).value,
+                    stops: document.querySelector(`#race-inputs [data-index='${i}'][data-field='stops']`).value,
+                    bestLap: document.querySelector(`#race-inputs [data-index='${i}'][data-field='bestLap']`).value,
+                    points: document.querySelector(`#race-inputs [data-index='${i}'][data-field='points']`).value,
+                    time: document.querySelector(`#race-inputs [data-index='${i}'][data-field='time']`).value,
+                };
+                
+                if(i === 0) winnerData = data;
+
+                const row = document.createElement('tr');
+                const textColor = (i === 0) ? '#000000' : '#f0f0f0';
+
+                row.innerHTML = `
+                    <td style="left: ${coords.pos.x / scale}px; text-align: center; width: 50px; color: ${textColor};">${i + 1}</td>
+                    <td style="left: ${coords.driver.x / scale}px; text-align: left; width: 154px; color: ${textColor};">${data.driver}</td>
+                    <td style="left: ${coords.team.x / scale}px; text-align: left; width: 285px; color: ${textColor};" class="td-team">
+                        <img src="${teamLogos[data.team] || teamLogos['Other']}" class="team-logo" alt="${data.team} logo">
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${teamFullNames[data.team] || data.team}</span>
+                    </td>
+                    <td style="left: ${coords.grid.x / scale}px; text-align: center; width: 48px; color: ${textColor};">${data.grid}</td>
+                    <td style="left: ${coords.stop.x / scale}px; text-align: center; width: 60px; color: ${textColor};">${data.stops}</td>
+                    <td style="left: ${coords.best.x / scale}px; text-align: center; width: 96px; color: ${textColor};">${data.bestLap}</td>
+                    <td style="left: ${coords.time.x / scale}px; text-align: center; width: 109px; color: ${textColor};">${data.time}</td>
+                    <td style="left: ${coords.points.x / scale}px; text-align: center; width: 40px; color: ${textColor};">${data.points}</td>
+                `;
+                previewRaceBody.appendChild(row);
+            }
+
+            if(winnerData){
+                const winnerLogo = document.getElementById('winner-logo-placeholder');
+                winnerLogo.src = teamLogos[winnerData.team] || teamLogos['Other'];
+                winnerLogo.onerror = () => { winnerLogo.src = teamLogos['Other']; };
+                document.getElementById('winner-name').textContent = winnerData.driver;
+                document.getElementById('winner-team').textContent = teamFullNames[winnerData.team] || winnerData.team;
+            } else {
+                document.getElementById('winner-logo-placeholder').src = "https://placehold.co/200x80/21202e/ffffff?text=TEAM+LOGO";
+                document.getElementById('winner-name').textContent = ''; 
+                document.getElementById('winner-team').textContent = '';
+            }
+
+            const pp = { 
+                d: ppDriverSelect.value, 
+                t: ppTeamSelect.value, 
+                time: document.getElementById('pp_time').value 
+            };
+            
+            let content = '';
+            if (pp.d && pp.d !== 'PLAYER NAME') {
+                content += pp.d;
+            }
+            if (pp.t && pp.t !== 'Other') {
+                if (content) content += ' | ';
+                content += (teamFullNames[pp.t] || pp.t);
+            }
+            if (pp.time) {
+                if (content) content += ' | ';
+                content += pp.time;
+            }
+            document.getElementById('preview-pp').textContent = content;
+        }
+
+        function downloadImage() {
+            const button = document.getElementById('downloadBtn');
+            button.textContent = 'Generating...';
+            button.disabled = true;
+
+            setTimeout(() => {
+                html2canvas(resultCard, { 
+                    scale: 3,
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false
+                })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    const gpName = document.getElementById('trackName').value || 'f1-results';
+                    link.download = `${gpName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_results.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                })
+                .catch(err => {
+                    console.error('Oops, something went wrong!', err);
+                    alert('Failed to generate image. Please try again or check console for errors.');
+                })
+                .finally(() => {
+                    button.textContent = 'Download Results Image';
+                    button.disabled = false;
+                });
+            }, 1000); // Increased delay to 1 second
+        }
+        
+        document.querySelector('.w-full.bg-gray-800').addEventListener('input', updatePreview);
+        downloadBtn.addEventListener('click', downloadImage);
+        resetBtn.addEventListener('click', resetData);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateStaticDropdowns();
+            resetData();
+        });
+    </script>
+</body>
+</html>
+
