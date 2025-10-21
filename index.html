@@ -31,10 +31,10 @@
             -webkit-transform: translateZ(0);
         }
 
-        /* Title */
+        /* Title - lifted slightly up to avoid being cut in html2canvas output */
         #preview-title {
             position: absolute;
-            top: 51px;
+            top: 60px; /* moved up a bit to prevent cutting when exporting */
             left: 30px;
             font-family: 'Orbitron', sans-serif;
             font-size: 33px;
@@ -139,7 +139,6 @@
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-black text-red-600 tracking-wider">F1 RESULTS GENERATOR</h1>
-            <p class="text-gray-400 mt-2">Create and share professional-looking race results for your F1 league.</p>
         </header>
 
         <div class="flex flex-col gap-8">
