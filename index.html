@@ -118,7 +118,7 @@
             justify-content: center;
             align-items: center;
         }
-        #winner-logo-box img { height: 150px; object-fit: contain; display:block; }
+        #winner-logo-box img { height: 70px; object-fit: contain; display:block; }
         #winner-details-box {
             position: absolute;
             top: 450px;
@@ -250,19 +250,36 @@
         document.fonts.load('900 33px "Orbitron"').catch(() => {});
         document.fonts.load('400 11px "Inter"').catch(() => {});
 
+        // Logos for the results table (small)
         const teamLogos = {
             "Mercedes": "LOGOS/Mini logos/mercedes.png",
             "Red Bull": "LOGOS/Mini logos/redbull.png",
             "Ferrari": "LOGOS/Mini logos/ferrari.png",
             "McLaren": "LOGOS/Mini logos/mclaren.png",
             "Alpine": "LOGOS/Mini logos/alpine.png",
-            "Aston Martin": "https://www.formula1.com/content/dam/fom-website/teams/2023/aston-martin-logo.png.transform/2col-retina/image.png",
+            "Aston Martin": "https::/www.formula1.com/content/dam/fom-website/teams/2023/aston-martin-logo.png.transform/2col-retina/image.png", // Kept original URL as fallback
             "Williams": "LOGOS/Mini logos/williams.png",
             "Haas": "LOGOS/Mini logos/haas.png",
             "Kick Sauber": "LOGOS/Mini logos/kick_sauber.png",
             "Racing Bulls": "LOGOS/Mini logos/racing_bulls.png",
             "Other": "https://placehold.co/200x80/21202e/ffffff?text=TEAM"
         };
+        
+        // Logos for the winner box (large)
+        const winnerTeamLogos = {
+            "Mercedes": "LOGOS/mercedes.png",
+            "Red Bull": "LOGOS/redbull.png",
+            "Ferrari": "LOGOS/ferrari.png",
+            "McLaren": "LOGOS/mclaren.png",
+            "Alpine": "LOGOS/alpine.png",
+            "Aston Martin": "LOGOS/aston_martin.png", // Assuming this filename
+            "Williams": "LOGOS/williams.png",
+            "Haas": "LOGOS/haas.png",
+            "Kick Sauber": "LOGOS/kick_sauber.png",
+            "Racing Bulls": "LOGOS/racing_bulls.png",
+            "Other": "https://placehold.co/200x80/21202e/ffffff?text=TEAM"
+        };
+
         const teamFullNames = {
             "Mercedes": "MERCEDES", "Red Bull": "RED BULL RACING HONDA RBPT", "Ferrari": "FERRARI", "McLaren": "MCLAREN MERCEDES",
             "Alpine": "ALPINE RENAULT", "Aston Martin": "ASTON MARTIN MERCEDES", "Williams": "WILLIAMS MERCEDES",
@@ -416,8 +433,8 @@
 
             if(winnerData){
                 const winnerLogo = document.getElementById('winner-logo-placeholder');
-                winnerLogo.src = teamLogos[winnerData.team] || teamLogos['Other'];
-                winnerLogo.onerror = () => { winnerLogo.src = teamLogos['Other']; };
+                winnerLogo.src = winnerTeamLogos[winnerData.team] || winnerTeamLogos['Other']; // Use winnerTeamLogos
+                winnerLogo.onerror = () => { winnerLogo.src = winnerTeamLogos['Other']; };
                 // set explicit text values with no margins so vertical centering remains stable
                 const winnerNameEl = document.getElementById('winner-name');
                 const winnerTeamEl = document.getElementById('winner-team');
@@ -634,3 +651,4 @@
     </script>
 </body>
 </html>
+
