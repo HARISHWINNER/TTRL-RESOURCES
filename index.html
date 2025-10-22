@@ -31,10 +31,10 @@
             -webkit-transform: translateZ(0);
         }
 
-        /* Title - lifted slightly up to avoid being cut in html2canvas output */
+        /* Title */
         #preview-title {
             position: absolute;
-            top: 71px; 
+            top: 71px;
             left: 30px;
             font-family: 'Orbitron', sans-serif;
             font-size: 33px;
@@ -124,10 +124,10 @@
 
         #footer-awards {
             position: absolute;
-            top: 688px;
-            left: 790px;
-            transform: translate(-50%, -50%);
-            font-size: 14px;
+            top: 679px;
+            left: 540px;
+           
+            font-size: 15px;
             font-weight: 700;
             color: white;
             white-space: nowrap;
@@ -164,7 +164,7 @@
                         </div>
                      </div>
                 </div>
-
+                
                 <div>
                     <h2 class="text-xl font-bold border-b-2 border-red-600 pb-2 mb-4">Race Results (Top 20)</h2>
                      <div class="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2 px-2">
@@ -179,14 +179,23 @@
                     </div>
                     <div id="race-inputs" class="space-y-2 max-h-[300px] overflow-y-auto pr-2"></div>
                 </div>
-
-                <div class="pt-4 flex gap-4">
-                     <button id="downloadBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg">
-                        Download Results Image
-                    </button>
-                    <button id="resetBtn" class="w-1/3 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
-                        Reset
-                    </button>
+                
+                <div class="pt-4 flex flex-col items-center">
+                    <div class="flex gap-4 w-full">
+                        <button id="downloadBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                            Download Results Image
+                        </button>
+                        <button id="resetBtn" class="w-1/3 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
+                            Reset
+                        </button>
+                        <label for="importFile" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors text-center cursor-pointer">
+                            Import CSV
+                        </label>
+                        <input type="file" id="importFile" class="hidden" accept=".csv">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3 text-center">
+                        To import, use the exported session_results CSV file from the game directly.
+                    </p>
                 </div>
             </div>
 
@@ -235,6 +244,19 @@
             "Alpine": "ALPINE RENAULT", "Aston Martin": "ASTON MARTIN MERCEDES", "Williams": "WILLIAMS MERCEDES",
             "Haas": "HAAS FERRARI", "Kick Sauber": "KICK SAUBER FERRARI", "Racing Bulls": "RACING BULLS HONDA RBPT", "Other": "TEAM NAME"
         };
+        
+        const csvTeamNameToShortName = {
+            "mercedes-amg petronas": "Mercedes",
+            "red bull": "Red Bull",
+            "scuderia ferrari hp": "Ferrari",
+            "mclaren": "McLaren",
+            "alpine": "Alpine",
+            "aston martin": "Aston Martin",
+            "williams": "Williams",
+            "haas": "Haas",
+            "kick sauber": "Kick Sauber",
+            "visa cash app racing bulls": "Racing Bulls"
+        };
 
         const initialDrivers = Array.from({ length: 20 }, (_, i) => ({
              driver: 'PLAYER NAME', team: 'Other', grid: i + 1, stops: 2, bestLap: '1:11:546', time: '45:47.690', points: i < 10 ? `+${[25,18,15,12,10,8,6,4,2,1][i]}` : '0'
@@ -247,6 +269,7 @@
         const resultCard = document.getElementById('result-card');
         const ppDriverSelect = document.getElementById('pp_driver');
         const ppTeamSelect = document.getElementById('pp_team');
+        const importFileInput = document.getElementById('importFile');
 
         // must match CSS --row-height (24.5px so 20 rows = 490px)
         const ROW_HEIGHT = 24.5;
@@ -401,7 +424,24 @@
             document.getElementById('preview-pp').textContent = content;
         }
 
-        // Wait for images inside an element to be loaded (resolves even if some fail)
+        function handlePoleDriverChange() {
+            const selectedDriver = ppDriverSelect.value;
+            if (selectedDriver && selectedDriver !== 'PLAYER NAME') {
+                for (let i = 0; i < 20; i++) {
+                    const driverInput = document.querySelector(`[data-index='${i}'][data-field='driver']`);
+                    if (driverInput && driverInput.value.toUpperCase() === selectedDriver) {
+                        const teamValue = document.querySelector(`[data-index='${i}'][data-field='team']`).value;
+                        const bestLapValue = document.querySelector(`[data-index='${i}'][data-field='bestLap']`).value;
+                        
+                        ppTeamSelect.value = teamValue;
+                        document.getElementById('pp_time').value = bestLapValue;
+                        break; 
+                    }
+                }
+            }
+            updatePreview();
+        }
+
         function waitForImages(container) {
             const imgs = Array.from(container.querySelectorAll('img'));
             if (!imgs.length) return Promise.resolve();
@@ -418,16 +458,15 @@
             button.disabled = true;
 
             try {
-                // Ensure fonts & images are ready so html2canvas captures accurate metrics
                 await document.fonts.ready;
                 await waitForImages(resultCard);
-                await new Promise(r => setTimeout(r, 100)); // small settle delay
+                await new Promise(r => setTimeout(r, 100)); 
 
                 const canvas = await html2canvas(resultCard, { scale: 3, backgroundColor: null, useCORS: true, logging: false });
 
                 canvas.toBlob(blob => {
                     if (!blob) {
-                        alert('Export failed — canvas was not created. This usually happens with cross-origin images. Check console for details.');
+                        alert('Export failed. Check console for details.');
                         return;
                     }
                     const link = document.createElement('a');
@@ -450,9 +489,108 @@
             }
         }
 
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                parseAndLoadCSV(text);
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        }
+
+        function parseAndLoadCSV(csvText) {
+            try {
+                const lines = csvText.trim().split(/\r?\n/);
+                const headerLine = lines.find(line => line.startsWith('"Pos."'));
+                if (!headerLine) {
+                    alert('Could not find the header row in the CSV. Make sure it starts with "Pos.".');
+                    return;
+                }
+
+                const headers = headerLine.split(',').map(h => h.trim().replace(/"/g, ''));
+                const driverIndex = headers.indexOf('Driver');
+                const teamIndex = headers.indexOf('Team');
+                const gridIndex = headers.indexOf('Grid');
+                const stopsIndex = headers.indexOf('Stops');
+                const bestIndex = headers.indexOf('Best');
+                const timeIndex = headers.indexOf('Time');
+                const ptsIndex = headers.indexOf('Pts.');
+
+                if ([driverIndex, teamIndex, gridIndex, stopsIndex, bestIndex, timeIndex, ptsIndex].includes(-1)) {
+                    alert('CSV file is missing one or more required columns.');
+                    return;
+                }
+                
+                const resultsStartIndex = lines.indexOf(headerLine) + 1;
+                let driverCount = 0;
+
+                for (let i = resultsStartIndex; i < lines.length && driverCount < 20; i++) {
+                    const line = lines[i];
+                    if (!line || !line.trim()) continue; // Skip empty lines
+
+                    const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                    if (isNaN(parseInt(values[0]))) break; // Stop if the first column is not a position number
+
+                    const data = {
+                        Driver: values[driverIndex],
+                        Team: values[teamIndex],
+                        Grid: values[gridIndex],
+                        Stops: values[stopsIndex],
+                        BestLap: values[bestIndex],
+                        Time: values[timeIndex],
+                        Points: values[ptsIndex],
+                    };
+
+                    document.querySelector(`[data-index='${driverCount}'][data-field='driver']`).value = data.Driver || 'PLAYER NAME';
+                    
+                    const teamSelect = document.querySelector(`[data-index='${driverCount}'][data-field='team']`);
+                    const shortTeamName = csvTeamNameToShortName[(data.Team || '').toLowerCase()] || 'Other';
+                    teamSelect.value = shortTeamName;
+                    
+                    document.querySelector(`[data-index='${driverCount}'][data-field='grid']`).value = data.Grid || (driverCount + 1);
+                    document.querySelector(`[data-index='${driverCount}'][data-field='stops']`).value = data.Stops || 0;
+                    document.querySelector(`[data-index='${driverCount}'][data-field='bestLap']`).value = data.BestLap || '';
+                    document.querySelector(`[data-index='${driverCount}'][data-field='time']`).value = data.Time || '';
+                    
+                    let points = data.Points || '0';
+                    if (parseInt(points) > 0) {
+                        points = `+${points}`;
+                    }
+                    document.querySelector(`[data-index='${driverCount}'][data-field='points']`).value = points;
+
+                    driverCount++;
+                }
+                
+                // Clear remaining rows if CSV has fewer than 20 drivers
+                for (let i = driverCount; i < 20; i++) {
+                     document.querySelector(`[data-index='${i}'][data-field='driver']`).value = 'PLAYER NAME';
+                     document.querySelector(`[data-index='${i}'][data-field='team']`).value = 'Other';
+                     document.querySelector(`[data-index='${i}'][data-field='grid']`).value = (i + 1);
+                     document.querySelector(`[data-index='${i}'][data-field='stops']`).value = '0';
+                     document.querySelector(`[data-index='${i}'][data-field='bestLap']`).value = '';
+                     document.querySelector(`[data-index='${i}'][data-field='time']`).value = '';
+                     document.querySelector(`[data-index='${i}'][data-field='points']`).value = '0';
+                }
+
+                updatePreview();
+
+            } catch (error) {
+                console.error("Error parsing CSV:", error);
+                alert("Failed to parse CSV file. Please check its format.");
+            }
+        }
+
         document.querySelector('.w-full.bg-gray-800').addEventListener('input', updatePreview);
         downloadBtn.addEventListener('click', downloadImage);
         resetBtn.addEventListener('click', resetData);
+        importFileInput.addEventListener('change', handleFileUpload);
+        ppDriverSelect.addEventListener('change', handlePoleDriverChange);
+
 
         document.addEventListener('DOMContentLoaded', () => {
             // populate dropdowns and seed inputs
@@ -463,3 +601,4 @@
     </script>
 </body>
 </html>
+
